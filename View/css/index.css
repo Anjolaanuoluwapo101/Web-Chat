@@ -1,0 +1,31 @@
+html,body{
+  width:100%;
+  max-width:1400px;
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+  
+}
+
+.draggable {
+  width: 25%;
+  min-height: 6.5em;
+  margin: 1rem 0 0 1rem;
+  background-color: #29e;
+  color: white;
+  border-radius: 0.75em;
+  padding: 4%;
+  touch-action: none;
+  user-select: none;
+}
+
+#messagingOptions{
+  font-size:28px;
+}
+
+#messagingOptions span{
+  margin-right:5px;
+}
+
+#conversation{
+}
