@@ -1,6 +1,5 @@
 
 setTimeout(async function() {
-
   return new Promise((resolve, reject) => {
     $.ajax({
       url: '../linkFrontendToBackend.php',
@@ -23,8 +22,7 @@ setTimeout(async function() {
       },
     }).done((data)=> {
       if (data) {
-        alert(data);
-        alert("Tagged Messages loaded");
+        data = JSON.parse(data);
         a('notif').innerHTML = data;
        // history.go(-1);
       } else {
@@ -34,3 +32,40 @@ setTimeout(async function() {
   });
 }, 1000)
 
+
+function locateReplyToTaggedMessage(arr) {
+
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url: '../linkFrontendToBackend.php',
+      type: 'GET',
+       async:true,
+      data: {
+        sender: function() {
+          return qs['sender'];
+        },
+        receiver: function() {
+          return qs['receiver'];
+        },
+        reply_message_ChatID : function(){
+          return ChatID;
+        }
+      },
+      success: function (dt) {
+        var data = resolve(dt);
+      },
+      error: function (error) {
+        reject(error)
+      },
+    }).done((data)=> {
+      if (data) {
+        alert(data);
+        alert("Tagged Messages loaded");
+        a('notif').innerHTML = data;
+       // history.go(-1);
+      } else {
+       // checkIfGroupMember();
+      }
+    })
+  });
+}

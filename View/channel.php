@@ -97,6 +97,7 @@
   <script src="channel_js/automaticallyLoadRecipientMessage.js"></script>
   <script src="channel_js/settings.js"></script> 
   <script src="channel_js/saveToChatHistory.js"></script> 
+  <script src="channel_js/loadTaggedMessages.js"></script> 
 
 </body>
 </html>

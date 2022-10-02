@@ -64,11 +64,42 @@ class UserController extends BaseController
    public function input_7($params=[]){
      try{
        $instance =new UserModel;
-       return $instance->saveChatHistory($params);
+       return $instance->saveChatHistoryOnFirstVisit($params);
      }catch(Exception $e){
        throw new Exception($e->getMessage());
      }
    }
+   
+   
+   public function input_8($params=[]){
+     try{
+       $instance =new UserModel;
+       return $instance->populateChatHistory($params);
+     }catch(Exception $e){
+       throw new Exception($e->getMessage());
+     }
+   }
+   
+   public function input_9($params=[]){
+     try{
+       $instance =new UserModel;
+       return $instance->resetNumberOfMessages($params);
+     }catch(Exception $e){
+       throw new Exception($e->getMessage());
+     }
+   }
+   
+  
+   public function input_10($params=[]){
+     try{
+       $instance =new UserModel;
+       return $instance->updateChatHistory($params);
+     }catch(Exception $e){
+       throw new Exception($e->getMessage());
+     }
+   }
+   
+  
    
    
    public function output_1($params)
@@ -84,11 +115,11 @@ class UserController extends BaseController
   
    
     
-   public function output_2($param)
+   public function output_2($params)
    {
      try{
        $instance = new UserModel;
-       return $instance->retrieveChatHistory($param);
+       return $instance->retrieveChatHistory($params);
      }catch(Exception $e){
        throw new Exception($e->getMessage());
      }
@@ -103,7 +134,17 @@ class UserController extends BaseController
      }catch(Exception $e){
        throw new Exception($e->getMessage());
      }
-       
+   }
+   
+   
+   public function output_4($param)
+   {
+     try{
+       $instance = new UserModel;
+       return $instance->getChatHistoryFromDB($param);
+     }catch(Exception $e){
+       throw new Exception($e->getMessage());
+     }
    }
    
 

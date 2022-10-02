@@ -1,11 +1,13 @@
-//this script helps remember that a public channel has been visited
-
+//When a user visits a recipient to chat with them...
+//an array is created.The array consist of [sender,receiver,recipientLink,channel_type]
+//this is taken to the backend and saved in a column called chatHistory
+//the column in the backend is structured differently....
+//localStorage.clear();
 setTimeout(async function() {
-  
-  
+  /*
   if (getCookie(qs["receiver"]) != '') {
     return true;
-  }
+  }*/
   //next is to check if the receiver has actually blocked the sender before
   return new Promise((resolve, reject) => {
     $.ajax({
@@ -28,29 +30,27 @@ setTimeout(async function() {
       },
       success: function (dt) {
         var data = resolve(dt);
-        //pls
       },
       error: function (error) {
         reject(error)
       },
     }).done((data)=> {
-      if (data !== 'already saved') {
+      if (data != 'already saved') {
         data = JSON.parse(data);
         let chatHistory = localStorage.getItem("chatHistory");
 
-        if (typeof chatHistory == undefined) {
+        if (!chatHistory) {
+          alert('undefined')
           localStorage.setItem("chatHistory", JSON.stringify([]));
           chatHistory = JSON.parse(localStorage.getItem("chatHistory"));
         } else {
+          alert('not null')
           chatHistory = JSON.parse(chatHistory);
 
         }
-        alert(data[1]);
   
-        setCookie(data[1],'true',50);
-        chatHistory[data[1]] = data;
+        chatHistory.push(data);//we add the newly opened chat to the chatHistory for better ux
         localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-
 
       } else {
         // checkIfGroupMember();

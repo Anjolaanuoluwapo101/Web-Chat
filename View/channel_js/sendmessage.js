@@ -14,10 +14,9 @@ $(function () {
     }
     
     a('channel_type').value=qs.channel_type;
-    alert(qs.channel_type);
     
      //we need to add the sender's name for better ux....
-     a('message').value = `<b> <a href=''>[${qs['sender']}]</a>:</b> <br>`+a('message').value;
+     a('message').value = `<a href=''> <b>${qs['sender']}</b> </a><br>`+a('message').value;
      
     $.ajax({
       url: '../linkFrontendToBackend.php',
@@ -66,19 +65,19 @@ function updateChatDOM() {
   if (a('file').value == "") {
     file = '';
   } else {
-    file = `<img width="50%"  src="../Storage_Files/Imgs/Wednesday_September_2022/`+a('file').files[0].name+`" alt="Refresh to display \n Recepient can see Image displayed ">`;
+    file = `<img style="margin:auto" width="50%"  src="../Storage_Files/Imgs/Wednesday_September_2022/`+a('file').files[0].name+`" alt="Refresh to display \n Recepient can see Image displayed ">`;
   }
   let repliedMessage = a('repliedMessage').value;
   updateVar =
   `
-  <div style="width:50%>
+  <div style="width:50%;">
   <!--this div contains a tagged message...it can be empty and hence invisible-->
-  <div class="w3-padding-large w3-bar-block w3-opacity" style="">
+  <div class="w3-padding-large w3-bar-block w3-opacity w3-center" style="margin:auto;">
   ${repliedMessage}
   <!-- <div class="w3-bar-item  w3-leftbar w3-border-black" style="overflow:hidden"></div>-->
   </div>
   <!--This div contains the file for that message..it can be empty and not visible if the user doesn't send a file  -->
-  <div class="w3-padding-large w3-bar-block w3-opacity" style="">
+  <div class="w3-padding-large w3-bar-block w3-opacity w3-center" style="">
   ${file}
   </div>
 

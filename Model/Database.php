@@ -24,7 +24,7 @@ class Database
   }
 
 
-  //handles the $_POST['sender'],$_POST['reciever'],$_POST[text_chat],$_POST['text_chatID'],$_POST['text_chat_reply'],$_FILES['file']['name'] ..... in an array
+  //handles the $_POST['sender'],$_POST['reciever'],$_POST[text_chat],$_POST['text_chatID'],$_POST['text_chat_reply'],$_FILES['file']list and lastly $_POST['channel_type'] ..... in an array
   protected function executeStatement_1($query1, $query2, $params = []) {
     try {
       $stmt = $this->connection->prepare($query1);
@@ -34,11 +34,13 @@ class Database
       }
 
       $array = $this->checkForMediaInMessage($params[5], $params[6], $params[7], $params[8], $params[9]);
-      if ($params[4] != '') {
+      /*if ($params[4] != '') {
         if (preg_match('/\[(.*?)\]/', $params[4], $match) == 1) {
           $match = $match[1];
         }
-      }
+      }*/
+
+
 
       if ($params && count($params) != 0) {
         $stmt->bindParam(1, $params[0], PDO::PARAM_STR);
@@ -55,26 +57,34 @@ class Database
       $stmt->execute();
 
       //we need to update the message array of the receiver
-      $this->updateMessageArray($query2, [$params[0], $params[1]]);
+      $this->updateMessageArray($query2, [$params[0], $params[1],$params[10]]);
       //file type returned should either be video or audio...
       //  return $array[1];
 
-      //we need to update the notification list too
-      //when someone tags you message,whether in a gc or private chat...we nees to store it in a array
+      //we need to update the notification list column too..by default..it is a serialized empty array
+      //when someone tags you message,whether in a gc or private chat...we need to store their reply to that your tagged it in an array so that auser can reply them later
       //the array will consist of
       //[the receiver name,the senders name,the reply to your message,generated id for that reply message,your initial message ,"unseen"]...
       //note that,someone can tag and reply your messages more than once...
       //what we do is that when somebody initally replies your message...we create an array for them in the Notification_List column(which itself is an array)
       //Example:Anjola replies Joe  message(tags it)...
       //in the Notification_List=["Anjola"=>[["Anjola,Joe.."],[.....]],"Another person"=>[[],[]]]
-      //Extra logic is needed for a message tagged in a group because the receiver will be the group instead of the owner of the message to be replied
+      
+      //Extra logic is needed for a message tagged in a group because the receiver will be the group...a a group cannot reply a message..it is the group members that do that
       //so we grab the name of the imitial owner of the comment from the comment itself..remember a comment has the owner of the comment name in it.
       //the sender is also becomes the group chat! instead of the actual sender
-      //
+      
+      //if the message tagged is in a private channel instead...we simply use the receiver like that because a private channel consists of just two poeple
+      if ($params[4] != '') {
+        if (preg_match('/<b>(.*?)<\/b>/s', $params[4], $match) == 1) {
+          $match = $match[1];
+        }
+      }
+      
       if ($params[4] != '' && $params[10] == 'public') {
-        $this->add_notification([$params[1], $match, $params[2], $params[3], $params[4]]);
+        $this->tagged_messages([$params[1], $match, $params[2], $params[3], $params[4]]);
       } else if ($params[4] != '' && $params[10] == 'private') {
-        $this->add_notification([$params[0], $params[1], $params[2], $params[3], $params[4]]);
+        $this->tagged_messages([$params[0], $params[1], $params[2], $params[3], $params[4]]);
       }
     } catch(Exception $e) {
       throw new Exception($e->getMessage());
@@ -82,9 +92,9 @@ class Database
   }
 
   //this function is called by the protected function executeStatement_1...
-  //it adds tagged messages notification....to rhe database..
+  //it adds tagged messages notification....to the database..
   //it is retrieved by executeStatement_9;
-  private function add_notification($params = []) {
+  private function tagged_messages($params = []) {
     try {
 
       $stmt = $this->connection->prepare("SELECT `Notification_List` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` =?  ");
@@ -98,12 +108,13 @@ class Database
       if (!array_key_exists($params[0], $unserializedNotifList)) {
         $unserializedNotifList[$params[0]] = [];
       }
-      $unserializedNotifList[$params[0]][] = [$params[0],
-        $params[1],
-        $params[2],
-        $params[3],
-        $params[4],
-        "unseen"];
+      
+      //this helps us reset the tagged messages list if it getting too long
+      if(count($unserializedNotifList[$params[0]]) > 10){
+       $unserializedNotifList[$params[0]] = []; 
+      }
+      
+      $unserializedNotifList[$params[0]][] = [$params[0],$params[1],$params[2],$params[3],"unseen"];
       $serializedNotifList = serialize(($unserializedNotifList));
 
       $stmt = $this->connection->prepare("UPDATE `User_and_Groups_Details` SET `Notification_List` = ? WHERE `User_or_Group_Name` =?");
@@ -210,6 +221,7 @@ class Database
 
 
   //sending audio messages requires a special function
+  //atrophied...not in use.
   protected function executeStatement_3($query, $params = []) {
     try {
       $stmt = $this->connection->prepare($query);
@@ -277,7 +289,6 @@ class Database
   }
 
   //this is also an helper function of executeStatement_7 but it is called independently too by user model
-
   protected function executeStatement_6($query, $params) {
     try {
       $stmt = $this->connection->prepare($query);
@@ -388,7 +399,6 @@ class Database
 
   //this method is responsible for updating the database about how many messages has been sent by a someone to another person
   //it is triggered by executeStatement_1...this statement helps send a new message
-
   protected function updateMessageArray($query, $params) {
     try {
       /*
@@ -414,10 +424,25 @@ class Database
       //we check if the semder has messaged before...
       if (array_key_exists($params[0], $Number_of_Messages)) {
         $Number_of_Messages[$params[0]] = $Number_of_Messages[$params[0]] + 1;
-
+        //we also need to store the last time a message was sent to the backend from that person
+       if($params[2] == 'private'){
+          $time = $params[0]."_last_Message_Time";
+       }else{
+          $time = "last_Message_Time";
+       }
+        $Number_of_Messages[$time] = time();
+        
       } else {
         //if not..it means the sender is sending it first message...
         $Number_of_Messages[$params[0]] = 1;
+        //we also need to store the last time a message was sent to the backend from that person
+        //unlike private channels...for public channel we only need the last time a message was sent to the group not including who sent it
+        if($params[2] == 'private'){
+          $time = $params[0]."_last_Message_Time";
+       }else{
+          $time = "last_Message_Time";
+       }
+        $Number_of_Messages[$time] = time();
       }
 
       $serialized = serialize($Number_of_Messages);
@@ -457,6 +482,9 @@ class Database
     }
   }
 
+  //this is the reverse of your tagged messages...
+  //it helps dumps out the replies to your tagged messages
+  //
   protected function executeStatement_9($query, $params) {
     try {
       $stmt = $this->connection->prepare($query);
@@ -472,6 +500,7 @@ class Database
         $notif = array_reverse($notif);
         //this will echo out an array...with each child element being an array of length 4
         //the consists of.. [the receiever,the sender,the reply to a receiver's message from the sender,the generatee chatID,the initial message of the sender,"unseen"]
+        //it also outputs the counted notif 
         $output = [$notif,count($notif)];
         echo json_encode($output);
       }
@@ -480,6 +509,21 @@ class Database
     }
   }
 
+//this object method works in tandem with helperfunction2 which is private because it is only accessed by this object method(executeStatement_10)
+/*
+The database column that this object method alters is the chatHistory found in User_and_Groups_Details...
+it takes in the following params [the user,the recipient,the recipientLink,the channel_type]
+user and recipient are also sender and receiver respectively....
+
+the first thing done by the method is to distinguish between the channel type ...
+A public channel type means the recipient is a group
+A private channel type means,it's just another person
+This allows the method to use different queries to get the total number of messages sent between that private channel /public
+The messages sent to a public channel includes all the messages send by each individual members to a group..
+The messages sent to a private channel includes all the messages sent betwen two people
+The value is gotten and passed to helperfunction2
+
+*/
   protected function executeStatement_10($query1, $query2, $params) {
     try {
       $stmt1 = $this->connection->prepare($query1);
@@ -501,28 +545,205 @@ class Database
       throw new Exception($e->getMessage());
     }
   }
-
+  
+  
+//alias of executeStatement_10
+/*
+this object method takes a query,the value gotten from executeStatement_10 and all the params taken by executeStatement_10(params is an array)
+This helperfunction2 helps to alter chatHistory column
+It's a serialized empty array by default...
+Please note that we are altering the chat history column of the user... then the recipient....
+The object method first retrieves the chatHistory of the user...
+unserializes it next...
+Using the recipient name as a key ,it then  stores the params(the array to it along the image of the recipient nd the value gotten from the other )
+Then updates it back
+*/
   private function helperfunction2($query,$number_of_messages,$params) {
     try {
-      $stmt = $this->connection->prepare("SELECT `displayPicture`,`chatHistory` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` =? ");
-      $stmt->bindParam(1, $params[0], PDO::PARAM_STR);
-      $stmt->execute();
-      $data = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
-      $chatHistory = unserialize($data['chatHistory']);
-      $img= $data['displayPicture'];
-      if(!array_key_exists($params[1],$chatHistory)){
-        $chatHistory[$params[1]] = [$params[0],$params[1],$params[2],$params[3],$number_of_messages,$img];
+      //we connect and obtain both rows for both the user and the recipient
+      //the user first
+      $stmt1 = $this->connection->prepare("SELECT `displayPicture`,`chatHistory` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` =? ");
+      $stmt1->bindParam(1, $params[0], PDO::PARAM_STR);
+      $stmt1->execute();
+      $data1 = $stmt1->fetchAll(PDO::FETCH_ASSOC)[0];
+      $chatHistory1 = unserialize($data1['chatHistory']);
+      $img1= $data1['displayPicture'];
+      
+      //the recipient next
+      $stmt2 = $this->connection->prepare("SELECT `displayPicture`,`chatHistory` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` =? ");
+      $stmt2->bindParam(1, $params[1], PDO::PARAM_STR);
+      $stmt2->execute();
+      $data2 = $stmt2->fetchAll(PDO::FETCH_ASSOC)[0];
+      $chatHistory2 = unserialize($data2['chatHistory']);
+      $img2= $data2['displayPicture'];
+      
+      
+      
+      
+      if(!array_key_exists($params[1],$chatHistory1)){
+        $chatHistory1[$params[1]] = [$params[0],$params[1],$params[2],$params[3],$img2,$number_of_messages,0];
   
-        $stmt = $this->connection->prepare($query);
-        $stmt->bindParam(1, serialize($chatHistory), PDO::PARAM_STR);
-        $stmt->bindParam(2, $params[0], PDO::PARAM_STR);
-        $stmt->execute();
-        return json_encode($chatHistory[$params[1]]);
+        $stmt1 = $this->connection->prepare($query);
+        $stmt1->bindParam(1, serialize($chatHistory1), PDO::PARAM_STR);
+        $stmt1->bindParam(2, $params[0], PDO::PARAM_STR);
+        $stmt1->execute();
+        
+        if(!array_key_exists($params[0],$chatHistory2)){
+          //params[2] is the link useful for the user because in the link..the user is the sender and the reci is the receiver
+          //we need to reverse that for the receipient so we use str replace
+          $link = $params[2];
+          $pattern1 ="/".$params[1]."/";
+          $pattern2 ="/".$params[0]."/";
+          $modLink = preg_replace($pattern1,$params[0],$link);//this changes the receipient query value
+          $modLinkFinal = preg_replace($pattern2,$params[1],$modLink,1);
+          
+          $chatHistory2[$params[0]] = [$params[1],$params[0],$modLinkFinal,$params[3],$img1,$number_of_messages,0];
+  
+          $stmt2 = $this->connection->prepare($query);
+          $stmt2->bindParam(1, serialize($chatHistory2), PDO::PARAM_STR);
+          $stmt2->bindParam(2, $params[1], PDO::PARAM_STR);
+          $stmt2->execute();
+          
+        }
+        
+        return json_encode($chatHistory1[$params[1]]);
       }else{
         return "already saved";
       }
       
     } catch (Exception $e) {
+      throw new Exception($e->getMessage());
+    }
+  }
+  
+  /*
+  
+  
+  */
+  protected function executeStatement_11($params){
+    try {
+      $output = [];
+      $dataArray = json_decode($params[1]);
+      $dataArrayLength = count($dataArray);
+      for($i = 0;$i <= $dataArrayLength ;$i++ ){
+        $eachData = explode('|||',$dataArray[$i]);
+        if($eachData[1] == 'private'){
+          $stmt = $this->connection->prepare("SELECT `Number_of_Messages` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?");
+          $stmt->bindParam(1,$params[0],PDO::PARAM_STR);
+          $stmt->execute();
+          $Number_of_Messages = unserialize($stmt->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages']);
+          if(array_key_exists($eachData[0],$Number_of_Messages)){
+            $a = $Number_of_Messages[$eachData[0]];
+            $b = $eachData[0]."_last_Message_Time";
+            $c = $Number_of_Messages[$b];
+            $output[] = [$a,$c];
+          }
+        }else if($eachData[1] == 'public'){
+          $stmt = $this->connection->prepare("SELECT `Number_of_Messages`,`Number_of_Messages_Total` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?");
+          $stmt->bindParam(1,$eachData[0],PDO::PARAM_STR);
+          $stmt->execute();
+          $Result =$stmt->fetchAll(PDO::FETCH_ASSOC)[0];
+          $Number_of_Messages = unserialize($Result['Number_of_Messages']);
+          $Number_of_Messages_Total = unserialize($Result['Number_of_Messages_Total']);
+          
+            $b = $Number_of_Messages["last_Message_Time"];
+            unset($Number_of_Messages["last_Message_Time"]);
+            $a = array_sum($Number_of_Messages);
+            $c = $Number_of_Messages_Total[$params[0]];
+            $c = $a - $c;
+            $output[] = [$c,$b];
+        }
+      }
+      return json_encode($output);
+    } catch (Exception $e ) {
+      throw new Exception($e->getMessage());
+    }
+  }
+  
+  protected function executeStatement_12($params){
+    try {
+       if($params[2] == 'public'){
+        $stmt1 = $this->connection->prepare("SELECT `Number_of_Messages` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ? ");
+        if($params){
+          $stmt1->bindParam(1,$params[1],PDO::PARAM_STR);
+        }
+        $stmt1->execute();
+        $Number_of_Messages = unserialize($stmt1->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages']);
+        unset($Number_of_Messages['last_Message_Time']);
+        $a = array_sum($Number_of_Messages);
+        
+        $stmt2 = $this->connection->prepare("SELECT `Number_of_Messages_Total` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ? ");
+        $stmt2->bindParam(1,$params[1],PDO::PARAM_STR);
+        $stmt2->execute();
+        $Number_of_Messages_Total = unserialize($stmt2->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages_Total']);
+        $Number_of_Messages_Total[$params[0]] = $a;
+        
+        $stmt3 = $this->connection->prepare("UPDATE `User_and_Groups_Details` SET `Number_of_Messages_Total` =?  WHERE `User_or_Group_Name` = ?");
+        $stmt3->bindParam(1,serialize($Number_of_Messages_Total),PDO::PARAM_STR);
+        $stmt3->bindParam(2,$params[1],PDO::PARAM_STR);
+        $stmt3->execute();
+        
+       }else if($params[2] == 'private'){
+         $stmt1 = $this->connection->prepare("SELECT `Number_of_Messages` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ? ");
+         $stmt1->bindParam(1,$params[0],PDO::PARAM_STR);
+         $stmt1->execute();
+         $Number_of_Messages = unserialize($stmt1->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages']);
+         if(array_key_exists($params[1],$Number_of_Messages)){
+          $Number_of_Messages[$params[1]] = 0; //since the user has viewed the recipient message...we reset the Number_of_Messages for that receipient
+          
+         }
+         
+         $stmt2 = $this->connection->prepare("UPDATE `User_and_Groups_Details` SET `Number_of_Messages` = ? WHERE `User_or_Group_Name` =? ");
+         $stmt2->bindParam(1,serialize($Number_of_Messages),PDO::PARAM_STR);
+         $stmt2->bindParam(2,$params[0],PDO::PARAM_STR);
+         $stmt2->execute();
+         
+       }
+    } catch (Exception $e ) {
+      throw new Exception($e->getMessage());
+    }
+  }
+  
+  /*
+  This object method helps us overwrite the chathistory stored on the db with chatHistory stored on the client device 
+  
+  */
+  protected function executeStatement_13($query,$params){
+    try {
+      $stmt = $this->connection->prepare($query);
+      $array = json_decode($params[1]);
+      $newArray =[];
+      foreach ($array as $arrayChild) {
+        $newArray[$arrayChild[1]] = $arrayChild;
+      }
+      $newArray = serialize($newArray);
+      if($params){
+        $stmt->bindParam(1,$newArray,PDO::PARAM_STR);
+        $stmt->bindParam(2,$params[0],PDO::PARAM_STR);
+      }
+      
+        $stmt->execute();
+    } catch (Exception $e ) {
+      throw new Exception($e->getMessage());
+    }
+  }
+  
+  /*
+  This object method simply grabs the chathistory from in the db and overwrites the one on the localstorage...if it even exists..
+  This object method runs usually when a user signs in at first,because we want to get the chathistory available on the localstorage too
+  */
+  protected function executeStatement_14($query,$param){
+    try {
+      $stmt = $this->connection->prepare($query);
+      if($param){
+        $stmt->bindParam(1,$param,PDO::PARAM_STR);
+      }
+      $stmt->execute();
+      $chatHistory = unserialize($stmt->fetchAll(PDO::FETCH_ASSOC)[0]['chatHistory']);
+      $chatHistory = array_values($chatHistory);
+      return json_encode($chatHistory);
+      
+    } catch (Exception $e ) {
       throw new Exception($e->getMessage());
     }
   }

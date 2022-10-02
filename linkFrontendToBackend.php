@@ -55,7 +55,14 @@ else if(isset($_GET['intruder'],$_GET['group_name'])){
 }else if(isset($_GET['sender'],$_GET['receiver'],$_GET['taggedMessages'])){
   $objFeedController = new UserController();
   echo $objFeedController->output_3([$_GET['sender'],$_GET['receiver'],$_GET['taggedMessages']]);
+
+  
+}elseif (isset($_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID'])) {
+  $objFeedController = new UserController();
+  echo $objFeedController->output_2([$_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID']]);
 }
+
+
 /*METHODS FOR CHANNEL.PHP ENDS HERE  */
 
 

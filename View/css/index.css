@@ -27,5 +27,23 @@ html,body{
   margin-right:5px;
 }
 
+/*
 #conversation{
+  display:flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+*/
+
+img:hover{
+  position: fixed;
+  top:25%;
+  min-height:50%;
+  left:0;
+  width:100%;
+  object-fit: contain;
+}
+
+.w3-reduce{
+  width: 50%!important;
 }

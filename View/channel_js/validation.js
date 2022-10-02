@@ -5,7 +5,7 @@ setTimeout(async function() {
   //we chcek if the link has been tampered with
   //if it has been..this if block immediately escapes the page.
     if(qs.length != 4){
-      alert("This link has been tampered with");
+      //alert("This link has been tampered with");
     }
 
 
