@@ -1,15 +1,28 @@
 //Validation functions...this function carries out necessary tasks before loading a chat history
 //it runs before automaticallyloadrecipient.js can carry out it own ajax requests...
-
 setTimeout(async function() {
   //we chcek if the link has been tampered with
   //if it has been..this if block immediately escapes the page.
-    if(qs.length != 4){
-      //alert("This link has been tampered with");
+    if(qs.length < 3){
+      alert("This link has been tampered with");
+      history.back();
+    }else if(qs['receiver'] == qs['sender']){
+      alert("This link has been tampered with");
+      history.back();
+    }else if((qs['receiver'] == '') || (qs['sender'] == '') || (qs['channel_type'] == '') ){
+      alert("This link has been tampered with");
+      history.back();
     }
 
-
-
+    a('conversation').innerHTML = 
+    `
+    <p style="width:20%;position:fixed;top:40%;left:40%;">
+    <i class="fa fa-spinner w3-spin" style="font-size:64px"></i>
+    <br>
+    <br>
+    <span class="w3-small">LOADING...</span>
+    </p>
+    `
 
   //next is to check if the receiver has actually blocked the sender before
   return new Promise((resolve, reject) => {
@@ -34,14 +47,17 @@ setTimeout(async function() {
       },
     }).done((data)=> {
       if (data) {
-        alert("This contact blocked you");
-       // history.go(-1);
+        alert("This contact blocked you!!!");
+        history.go(-1);
       } else {
-       // checkIfGroupMember();
+       if(qs['channel_type'] == 'public' ){
+        checkIfGroupMember();
+       } 
+      
       }
     })
   });
-}, 1000)
+}, 500)
 
 
 
@@ -67,10 +83,10 @@ function checkIfGroupMember() {
       },
     }).done((data)=> {
       if (data) {
-        alert("You're not a member yet");
+        alert("You're not an associate of this channel");
+        alert("Normally you would be kicked out of the GC but since ")
        // history.go(-1);
       } else {
-        checkIfGroupMember();
       }
     })
   }

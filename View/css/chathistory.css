@@ -1,0 +1,25 @@
+body,html {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-size: 12px!important;
+}
+
+#showGroup {
+  width: auto;
+  position: fixed;
+  bottom: 5%;
+  right: 5%;
+}
+
+#createGroup {
+  width: 80%;
+  margin: auto;
+  position: fixed;
+  top: 25%;
+  left:10%;
+  background-color: white;
+  display:none;
+}

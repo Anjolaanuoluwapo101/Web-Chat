@@ -1,0 +1,24 @@
+    html,body{
+      margin:0;
+      height:100%;
+      width:100%;
+      padding:0;
+      }
+      
+      fieldset{
+        margin-top:25%;
+      }
+      
+      div input{
+        width:100%;
+        height: 20px;
+      }
+      
+      span{
+        color:red;
+        margin:auto;
+        font-size: 12px;
+      }
+      
+      legend div{
+      }

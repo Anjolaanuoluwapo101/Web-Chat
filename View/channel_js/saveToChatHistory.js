@@ -4,11 +4,6 @@
 //the column in the backend is structured differently....
 //localStorage.clear();
 setTimeout(async function() {
-  /*
-  if (getCookie(qs["receiver"]) != '') {
-    return true;
-  }*/
-  //next is to check if the receiver has actually blocked the sender before
   return new Promise((resolve, reject) => {
     $.ajax({
       url: '../linkFrontendToBackend2.php',
@@ -40,13 +35,10 @@ setTimeout(async function() {
         let chatHistory = localStorage.getItem("chatHistory");
 
         if (!chatHistory) {
-          alert('undefined')
           localStorage.setItem("chatHistory", JSON.stringify([]));
           chatHistory = JSON.parse(localStorage.getItem("chatHistory"));
         } else {
-          alert('not null')
           chatHistory = JSON.parse(chatHistory);
-
         }
   
         chatHistory.push(data);//we add the newly opened chat to the chatHistory for better ux

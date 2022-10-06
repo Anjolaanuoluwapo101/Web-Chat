@@ -47,6 +47,7 @@ function populateTaggedMessageDiv(id) {
   let taggedArea = a('repliedMessageDiv');
   taggedArea.innerHTML = `<span onclick="clearTaggedMessageDiv()" class="w3-right"><i class="fa fa-times"></i></span>`+document.getElementById(id).innerHTML;
   a('repliedMessage').value = a(id).innerHTML;
+  alert(a('repliedMessage').value)
   idForSentMessage = generateIDForNewMessage();
   a('MessageID').value = idForSentMessage;
 }

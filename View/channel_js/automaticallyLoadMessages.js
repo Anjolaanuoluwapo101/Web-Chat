@@ -2,28 +2,36 @@
 //the recipient has replies a message....
 let storePreviousMessage, offset = 0;
 
-function changeOffset(move) {
+function changeOffset(move, val = 5) {
+  a('conversation').innerHTML =
+  `
+  <div class='w3-spin'>
+  <div style="height:40px;width:40px" class="w3-border w3-border-black w3-round-xxlarge>
+  ghujnnjij  bh
+  </div>
+  </div>
+  `
   if (move == "back") {
-  //  alert("Previous message will be displayed soon")
-    offset = offset + 5; //since want to go further down the db table to load older message
+    //  alert("Previous message will be displayed soon")
+    offset = offset + val; //since want to go further down the db table to load older message
 
     //what if we want to go up the table? we need a code piece that displays a div that when click..increases ye offset value..
     a("increaseOffset").style.display = "block";
   } else if (move == "forward") {
-   // alert('Newer messages will be display soon')
-    offset = offset - 5;
-    if (offset == 0) {
+    // alert('Newer messages will be display soon')
+    offset = offset - val;
+    if (offset <= 0) {
       a("increaseOffset").style.display = "none"; //hide newer messages div if no message will be present since offset is 0
     }
   }
 }
 
-function loadRecipientMessage() {
+function loadMessages() {
   return new Promise((resolve, reject) => {
     $.ajax({
       url: '../linkFrontendToBackend.php',
       type: 'GET',
-      async:true,
+      async: true,
       data: {
         offset: function() {
           if (offset == 0) {
@@ -34,13 +42,13 @@ function loadRecipientMessage() {
             return offset;
           }
         },
-        sender: function(){
+        sender: function() {
           return qs['sender'];
         },
-        receiver: function(){
+        receiver: function() {
           return qs['receiver'];
         },
-        channel_type:function(){
+        channel_type: function() {
           return qs['channel_type'];
         }
       },
@@ -48,31 +56,33 @@ function loadRecipientMessage() {
         var data = resolve(dt);
       },
       error: function (err) {
-       var error= reject(error)
+        var error = reject(error)
       },
     }).done(function (data) {
       updateDOMWithDBData(data);
-    },function(error){
-      //alert(error);
-    });
+    },
+      function(error) {
+        //alert(error);
+      });
   });
 }
 
 
-function deleteMessage(id){
- return new Promise((resolve, reject) => {
+function deleteMessage(id) {
+  return new Promise((resolve,
+    reject) => {
     $.ajax({
       url: '../linkFrontendToBackend.php',
       type: 'POST',
-      tryCount:0,
-      retryLimit:2,
-      async:true,
+      tryCount: 0,
+      retryLimit: 2,
+      async: true,
       data: {
-        idOfMessageToBeDeleted :id,
-        sender: function(){
+        idOfMessageToBeDeleted: id,
+        sender: function() {
           return qs['sender'];
         },
-        receiver:function(){
+        receiver: function() {
           return qs['receiver'];
         }
       },
@@ -90,13 +100,18 @@ function deleteMessage(id){
 
 
 async function triggerFunction() {
-  await loadRecipientMessage();
+  await loadMessages();
 }
+setTimeout(function() {
+  triggerFunction();
+}, 2000);
+
+setInterval(function() {
+  //successive executions
+  triggerFunction();
+}, 7000)
 
 //makes a request to the db
-setInterval(()=> {
-  triggerFunction();
-}, 5000);
 
 
 function updateDOMWithDBData(data) {
@@ -108,14 +123,14 @@ function updateDOMWithDBData(data) {
     storePreviousMessage = data;
   }
 
-  let newMessages ='';
+  let newMessages = '';
   let file //initialize helper variables
   let newData = JSON.parse(data);
- 
+
   newData.reverse();
   for (let eachConvo of newData) {
-  let orientation = '2%' ;
-  let hide = 'none';
+    let orientation = '2%';
+    let hide = 'none';
     //check if an messageObject is empty
     if (eachConvo == '') {
       continue;
@@ -136,12 +151,12 @@ function updateDOMWithDBData(data) {
     //determine file media data type....
     if (eachConvo.fileType == '') {
       file = '';
-      classesForFileDiv='';
+      classesForFileDiv = '';
     } else if (eachConvo.fileType == 'image') {
       file = `<img style="margin:auto" width="100%" src='../${eachConvo.fileName}' alt='Image not found' >`;
     } else if (eachConvo.fileType == 'video') {
       file = `
-      <video width="320" height="240" controls>
+      <video style="width:100%" controls>
       <source src="../${eachConvo.fileName}" type="video/mp4">
       <source src="../${eachConvo.fileName}" type="video/ogg">
       Your browser does not support the video tag.
@@ -159,33 +174,42 @@ function updateDOMWithDBData(data) {
       </audio>
       `;
     }
-    
-    if(eachConvo.Sender == qs['sender']){
-       orientation = '38%';
-       hide ='';
+
+    if (eachConvo.Sender == qs['sender']) {
+      orientation = '38%';
+      hide = '';
     }
-    
+
     newMessages +=
     `
-    <div style="width:60%;margin-left:${orientation}" class="w3-padding-small w3-light-grey w3-round-xxlarge w3-bar-block"> 
-    <div style="width:80%;margin:auto" class="w3-opacity w3-round-small"> 
+    <div  style="width:60%;margin-left:${orientation}" class="w3-padding-small w3-light-grey w3-round-xxlarge w3-bar-block">
+    <div style="width:80%;margin:auto" class="w3-opacity w3-panel w3-leftbar w3-border-khaki w3-theme-l4" >
     ${eachConvo.RefChat}
     </div>
-    <div style="width:100%" class="w3-padding-small" id="${eachConvo.ChatID}"> 
+    <div style="width:100%" class="w3-padding-small" id="${eachConvo.ChatID}" onclick="showMessageSettings('${eachConvo.ChatID+'settings'}')">
     ${eachConvo.Chat}
     <br>
     ${file}
     </div>
-    
+    <span id="${eachConvo.ChatID+'settings'}" style='display:none'>
     <span class="w3-padding" onclick="populateTaggedMessageDiv('${eachConvo.ChatID}')">
     <i class="fa fa-mail-reply"></i>
     </span>
     <span style="display:${hide}" class="w3-padding" onclick="deleteMessage('${eachConvo.ChatID}')">
     <i class="fa fa-times"></i>
     </span>
+    </span>
+    <span style="font-size:7px" class="w3-opacity w3-center w3-padding-small">${eachConvo.Time.replace(' ', ' | ')}</span>
     </div>
     <br>
     `
   }
   a('conversation').innerHTML = "<br>"+newMessages;
+}
+
+function showMessageSettings(id) {
+  a(id).style.display = '';
+  setTimeout(function() {
+    a(id).style.display = 'none';
+  }, 3000);
 }

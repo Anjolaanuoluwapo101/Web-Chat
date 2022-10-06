@@ -1,4 +1,3 @@
-
 setTimeout(async function() {
   return new Promise((resolve, reject) => {
     $.ajax({
@@ -21,10 +20,33 @@ setTimeout(async function() {
         reject(error)
       },
     }).done((data)=> {
+      let tagged='';
       if (data) {
         data = JSON.parse(data);
-        a('notif').innerHTML = data;
-       // history.go(-1);
+        taggedmessages= data[0];
+
+       /* if(getCookie(qs['receiver']) == ''){
+          let previous_no_of_tagged_messages = 0;
+        }else{
+          let previous_no_of_tagged_messages = getCookie(qs['receiver']) 
+        }
+        
+        setCookie(qs['receiver'],data[1],500);
+        */
+        
+       // a('no_of_tagged_messages').innerHTML =  parseInt(data[1]) - parseInt(previous_no_of_tagged_messages);
+        for (var i = 0; i < taggedmessages.length; i++) {
+          tagged += 
+          `
+          <div class='w3-container w3-padding-large w3-bar-item w3-round-xxlarge w3-theme' onclick="locateReplyToTaggedMessage('${taggedmessages[i][3]}')">
+          <p class="w3-small"> ${taggedmessages[i][0]} replied your message </p>
+          ${taggedmessages[i][2]}
+          </div>
+          <br>
+          `
+        }
+        a('notifDiv').innerHTML = '<br>'+tagged;
+
       } else {
        // checkIfGroupMember();
       }
@@ -33,7 +55,7 @@ setTimeout(async function() {
 }, 1000)
 
 
-function locateReplyToTaggedMessage(arr) {
+function locateReplyToTaggedMessage(chatID) {
 
   return new Promise((resolve, reject) => {
     $.ajax({
@@ -48,7 +70,10 @@ function locateReplyToTaggedMessage(arr) {
           return qs['receiver'];
         },
         reply_message_ChatID : function(){
-          return ChatID;
+          return chatID;
+        },
+        channel_type:function(){
+          return qs['channel_type'];
         }
       },
       success: function (dt) {
@@ -59,12 +84,8 @@ function locateReplyToTaggedMessage(arr) {
       },
     }).done((data)=> {
       if (data) {
-        alert(data);
-        alert("Tagged Messages loaded");
-        a('notif').innerHTML = data;
-       // history.go(-1);
-      } else {
-       // checkIfGroupMember();
+        offset = 0;
+        changeOffset("back",data);
       }
     })
   });

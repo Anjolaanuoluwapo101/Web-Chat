@@ -1,0 +1,94 @@
+html,body {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-size: 12px!important;
+}
+
+body, h1, h2, h3, h4, h5, h6 {
+  font-family: "Segoe UI", Arial, sans-serif
+}
+
+
+img:hover,video:hover {
+  position: fixed;
+  top: 25%;
+  min-height: 50%;
+  left: 0;
+  width: 100%;
+  margin: auto;
+  object-fit: contain;
+  opacity:1;
+
+}
+
+a {
+  text-decoration: none;
+}
+
+
+#headerParent {
+  position: fixed;
+  background-color: white;
+  z-index: 1;
+}
+
+#headerParent div {
+  width: 15%;
+  font-weight: 700;
+}
+
+#headerParent>div:hover{
+  background:rgba(180,180,180,0.3);
+}
+
+#chatSettings {
+  z-index: 3;
+  font-size: 10px!important;
+  display: none;
+  position: fixed;
+  top: 30px;
+  right: 0;
+  width: 45%;
+  margin:auto;
+  background-color: white;
+}
+
+#chatSettings div {
+  z-index: 2;
+  background-color: white;
+  float: left;
+  border-bottom:1px solid whitesmoke;
+  width:100%;
+  height:30px;
+  display:inline-block;
+  position: relative;
+}
+
+#chatSettings div span{
+  position: absolute;
+  bottom:0;
+  left:0;
+}
+
+#blockDiv {
+  z-index:2000;
+  display: none;
+  position: fixed;
+  top: 15%;
+  left: 15%;
+  background-color: white;
+  width: 70%;
+  height: auto;
+}
+
+#settingsForm input{
+  display:none;
+}
+
+#messageForm button{
+  position:relative;
+  top:-30px;
+}

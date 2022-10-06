@@ -19,15 +19,36 @@ async function downloadChatHistoryFromDB() {
         reject(error)
       },
     }).done((data)=>{
-      localStorage.clear();
-      
+      //localStorage.clear();//wipes previous data without wiping other localstorage variables
       localStorage.setItem("chatHistory",data);
+      chatHistory = JSON.parse(data);
     });
   });
 }
 
-/*
-setInterval(function(){
-  updateChatHistoryFromDB();
-},8000)
-*/
+
+async function updateChatHistory(updatedChatHistory) {
+  return new Promise((resolve,
+    reject) => {
+    $.ajax({
+      url: '../linkFrontendToBackend2.php',
+      type: 'POST',
+      async: true,
+      data: {
+        sender: function() {
+          return qs['sender'];
+        },
+        updatedChatHistory: function() {
+          return updatedChatHistory;
+        }
+      },
+      success: function (dt) {
+        var data = resolve(dt);
+      },
+      error: function (error) {
+        reject(error)
+      }
+    })
+  })
+}
+

@@ -20,13 +20,6 @@ if (isset($_POST['text_chat'])) {
 }
 
 
-//this block runs to display private chats from db .....
-else if (isset($_GET['sender'], $_GET['receiver'], $_GET['offset'])) {
-  $objFeedController = new UserController();
-  echo $objFeedController->output_1([$_GET['sender'], $_GET['receiver'], $_GET['offset'],$_GET['channel_type']]);
-
-}
-
 
 //this only runs if a message is to be deleted from the frontend
 else if (isset($_POST['sender'], $_POST['receiver'], $_POST['idOfMessageToBeDeleted'])) {
@@ -34,32 +27,47 @@ else if (isset($_POST['sender'], $_POST['receiver'], $_POST['idOfMessageToBeDele
   echo $objFeedController->input_3($_POST['idOfMessageToBeDeleted']);
 }
 
-//this is triggered by the setTimeout function in automaticallyLoadRecipient.js ..it checks if a user opening a conversation has been blocked or not
+//this is triggered by the setTimeout function in validation.js ..it checks if a user opening a conversation has been blocked or not
 else if (isset($_POST['type'], $_POST['sender'], $_POST['receiver'])) {
   $objFeedController = new UserController();
   echo $objFeedController->input_4([$_POST['receiver'], $_POST['sender']]);
-
 }
+
 //this is used by an admin of a group or a user to block someone
 else if (isset($_POST['blocker'],$_POST['blockee'])) {
   $objFeedController = new UserController();
   echo $objFeedController->input_5([$_POST['blocker'], $_POST['blockee'],$_POST['block_type'],$_POST['channel']]);
- 
 }
+
 //when a user first opens a group..he/she is seen as an intruder...this helps to check if the user is a group member
 else if(isset($_GET['intruder'],$_GET['group_name'])){
   $objFeedController = new UserController();
   echo $objFeedController->input_6([$_GET['intruder'],$_GET['group_name']]);
-  
+}
+
+
+//tick unread messages as read...
+elseif (isset($_POST['sender'],$_POST['receiver'],$_POST['channel_type'],$_POST['markUnreadAsRead'])) {
+$objFeedController = new UserController();
+echo $objFeedController->input_9([$_POST['sender'],$_POST['receiver'],$_POST['channel_type']]);
+}
+
+//this block runs to display private chats from db .....
+else if (isset($_GET['sender'], $_GET['receiver'], $_GET['offset'])) {
+  $objFeedController = new UserController();
+  echo $objFeedController->output_1([$_GET['sender'], $_GET['receiver'], $_GET['offset'],$_GET['channel_type']]);
+}
+
 //if your message is directly tagged...this function populates the notif div and displays it (for better ux)
-}else if(isset($_GET['sender'],$_GET['receiver'],$_GET['taggedMessages'])){
+else if(isset($_GET['sender'],$_GET['receiver'],$_GET['taggedMessages'])){
   $objFeedController = new UserController();
   echo $objFeedController->output_3([$_GET['sender'],$_GET['receiver'],$_GET['taggedMessages']]);
+}
 
-  
-}elseif (isset($_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID'])) {
+  //to locate a particular message
+elseif (isset($_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID'],$_GET['channel_type'])) {
   $objFeedController = new UserController();
-  echo $objFeedController->output_2([$_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID']]);
+  echo $objFeedController->output_2([$_GET['sender'],$_GET['receiver'],$_GET['reply_message_ChatID'],$_GET['channel_type']]);
 }
 
 
