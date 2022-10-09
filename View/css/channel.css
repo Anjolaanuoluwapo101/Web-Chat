@@ -14,14 +14,15 @@ body, h1, h2, h3, h4, h5, h6 {
 
 img:hover,video:hover {
   position: fixed;
-  top: 25%;
-  min-height: 50%;
+  top: 10%;
+  height: 70%;
   left: 0;
   width: 100%;
   margin: auto;
   object-fit: contain;
   opacity:1;
-
+  overflow-y: scroll;
+  z-index: 2000;
 }
 
 a {
@@ -74,6 +75,17 @@ a {
 }
 
 #blockDiv {
+  z-index:2000;
+  display: none;
+  position: fixed;
+  top: 15%;
+  left: 15%;
+  background-color: white;
+  width: 70%;
+  height: auto;
+}
+
+#linkDiv {
   z-index:2000;
   display: none;
   position: fixed;

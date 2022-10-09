@@ -5,11 +5,13 @@ let storePreviousMessage, offset = 0;
 function changeOffset(move, val = 5) {
   a('conversation').innerHTML =
   `
-  <div class='w3-spin'>
-  <div style="height:40px;width:40px" class="w3-border w3-border-black w3-round-xxlarge>
-  ghujnnjij  bh
-  </div>
-  </div>
+    <p style="width:20%;position:relative;top:40%;left:40%;">
+    <i class="fa fa-spinner w3-spin" style="font-size:64px"></i>
+    <br>
+    <br>
+    <span class="w3-small">LOADING...</span>
+    </p>
+
   `
   if (move == "back") {
     //  alert("Previous message will be displayed soon")
@@ -183,7 +185,7 @@ function updateDOMWithDBData(data) {
     newMessages +=
     `
     <div  style="width:60%;margin-left:${orientation}" class="w3-padding-small w3-light-grey w3-round-xxlarge w3-bar-block">
-    <div style="width:80%;margin:auto" class="w3-opacity w3-panel w3-leftbar w3-border-khaki w3-theme-l4" >
+    <div style="width:80%;margin:auto" class="w3-opacity w3-panel w3-leftbar w3-border-indigo w3-theme-l4" >
     ${eachConvo.RefChat}
     </div>
     <div style="width:100%" class="w3-padding-small" id="${eachConvo.ChatID}" onclick="showMessageSettings('${eachConvo.ChatID+'settings'}')">
@@ -191,6 +193,7 @@ function updateDOMWithDBData(data) {
     <br>
     ${file}
     </div>
+    <br>
     <span id="${eachConvo.ChatID+'settings'}" style='display:none'>
     <span class="w3-padding" onclick="populateTaggedMessageDiv('${eachConvo.ChatID}')">
     <i class="fa fa-mail-reply"></i>

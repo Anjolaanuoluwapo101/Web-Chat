@@ -103,61 +103,23 @@ class UserController extends BaseController
     }
   }
 
-//input 15 is the same as this but slighly diff
-  public function input_12() {
+  //input 15 is the same as this but slighly diff
+  public function input_12($params,$options1) {
     try {
-      if (isset($_POST['username'], $_POST['password'], $_POST['email'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-        $email = $_POST['email'];
-
-        //we check if the email is a valid one
-        if (filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL) != true) {
-          $emailErr = "Invalid Email";
-        }
-        //next we check the password
-        else if (preg_match('/[\'^£$%&*()}{@#~><>,|=_+¬-]/', $password, $subject)) {
-          $passwordErr = "Special characters not allowed";
-        }
-
-        //we check the image too
-        else if (!isset($_FILES['file']['name']) || ($_FILES['file']['size'] > 5000000) ) {
-          $filesErr = "Files size should be less than 5MB";
-        }
-        
-        else if($username != ''){
-          $instance = new UserModel;
-          return $instance->registerNewAccount([$username,$password,$email,$_FILES['file']],'private');
-        } else{
-          $usernameErr ='Invalid Username';
-        } 
-      }
+      $instance = new UserModel;
       
+      return $instance->registerNewAccount($params,$options1);
+
 
     }catch(Exception $e) {
       throw new Exception($e->getMessage());
     }
   }
 
-  public function input_13() {
+  public function input_13($username,$password) {
     try {
-      if (isset($_POST['username'], $_POST['password'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-
-        //next we check the password
-        if (preg_match('/[\'^£$%&*()}{@#~?><>,|=!"%@_+¬-]/', $password, $subject)) {
-          $passwordErr = "Special characters not allowed";
-        }
-
-        else if($username != '' ){
-          $instance = new UserModel;
-          return $instance->loginToAccount([$username,$password]);
-        } else{
-          $usernameErr = 'Invalid Username';
-        } 
-      }
-      
+     $instance = new UserModel;
+    return $instance->loginToAccount([$username, $password]);
 
     }catch(Exception $e) {
       throw new Exception($e->getMessage());
@@ -176,17 +138,26 @@ class UserController extends BaseController
       throw new Exception($e->getMessage());
     }
   }
-  
-   public function input_15($gc_name,$files) {
+
+  public function input_15($gc_name, $files) {
     try {
-          $instance = new UserModel;
-          return $instance->registerNewAccount([$gc_name,'','',$files],'public');
+      $instance = new UserModel;
+      return $instance->registerNewAccount([$gc_name, '', '', $files], 'public');
+    }catch(Exception $e) {
+      throw new Exception($e->getMessage());
+    }
+  }
+  
+  public function input_16($param) {
+    try {
+      $instance = new UserModel;
+      return $instance->checkIfAccountExists($param);
     }catch(Exception $e) {
       throw new Exception($e->getMessage());
     }
   }
 
-  
+
   public function output_1($params) {
     try {
       $instance = new UserModel;

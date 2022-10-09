@@ -31,11 +31,15 @@ class Database
 
       $mediaDestinationAndFileTypePair = $this->checkForMediaInMessage($params[5], $params[6], $params[7], $params[8], $params[9]);
 
-
+      $filteredChat = strip_tags($params[2],"<b><a><br>");
+      /*$headerOfChatMessageBoundary = intval(strpos($params[2],'<br>')) + 3;
+      $bodyOfChatMessage = substr($params[2],$headerOfChatMessageBoundary,-1);
+      */
+      
       if ($params && count($params) != 0) {
         $stmt->bindParam(1, $params[0], PDO::PARAM_STR);
         $stmt->bindParam(2, $params[1], PDO::PARAM_STR);
-        $stmt->bindParam(3, $params[2], PDO::PARAM_STR);
+        $stmt->bindParam(3, $filteredChat, PDO::PARAM_STR);
         $stmt->bindParam(4, $params[3], PDO::PARAM_INT);
         $stmt->bindParam(5, $params[4], PDO::PARAM_STR);
         $stmt->bindParam(6, $mediaDestinationAndFileTypePair[0], PDO::PARAM_STR);
@@ -70,9 +74,9 @@ class Database
       }
 
       if ($params[4] != '' && $params[10] == 'public') {
-        $this->tagged_messages([$params[1], $match, $params[2], $params[3], $params[4]]);
+        $this->tagged_messages([$params[1], $match, $filteredChat, $params[3], $params[4]]);
       } else if ($params[4] != '' && $params[10] == 'private') {
-        $this->tagged_messages([$params[0], $params[1], $params[2], $params[3], $params[4]]);
+        $this->tagged_messages([$params[0], $params[1], $filteredChat, $params[3], $params[4]]);
       }
     } catch(Exception $e) {
       throw new Exception($e->getMessage());
@@ -93,17 +97,19 @@ class Database
       $stmt = $stmt->fetchAll(PDO::FETCH_ASSOC);
       $serializedNotifList = $stmt[0]['Notification_List'];
       $unserializedNotifList = unserialize($serializedNotifList);
+ 
       if (!array_key_exists($params[0], $unserializedNotifList)) {
         $unserializedNotifList[$params[0]] = [];
       }
 
       //this helps us reset the tagged messages list if it getting too long
       if (count($unserializedNotifList[$params[0]]) > 10) {
-        $unserializedNotifList[$params[0]] = [];
+        $unserializedNotifList[$params[0]] = [[$params[0],$params[1],$params[2],$params[3]]];
+      }else{
+      $unserializedNotifList[$params[0]][] = [$params[0],$params[1],$params[2],$params[3]];
       }
-
-      $unserializedNotifList[$params[0]][] = [$params[0],$params[1],$params[2],$params[3],"unseen"];
-      $serializedNotifList = serialize(($unserializedNotifList));
+      
+      $serializedNotifList = serialize($unserializedNotifList);
 
       $stmt = $this->connection->prepare("UPDATE `User_and_Groups_Details` SET `Notification_List` = ? WHERE `User_or_Group_Name` =?");
       $stmt->bindParam(1, $serializedNotifList, PDO::PARAM_STR);
@@ -629,29 +635,42 @@ Then updates it back
   */
   protected function executeStatement_11($params) {
     try {
+      $displayPictureOfRecipient = '';
       $output = [];
       $dataArray = json_decode($params[1]);
       $dataArrayLength = count($dataArray);
-      for ($i = 0; $i <= $dataArrayLength; $i++) {
+      for ($i = 0; $i < $dataArrayLength; $i++) {
         $eachData = explode('|||', $dataArray[$i]);
         $stmt = $this->connection->prepare('SELECT `displayPicture` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?');
         $stmt->bindParam(1, $eachData[0], PDO::PARAM_STR);
         $stmt->execute();
         $displayPictureOfRecipient = $stmt->fetchAll(PDO::FETCH_ASSOC)[0]['displayPicture'];
-        $stmt = '';
+        //$stmt = '';
 
         if ($eachData[1] == 'private') {
-          $stmt = $this->connection->prepare("SELECT `Number_of_Messages` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?");
-          $stmt->bindParam(1, $params[0], PDO::PARAM_STR);
-          $stmt->execute();
-          $Number_of_Messages = unserialize($stmt->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages']);
+          $stmt2 = $this->connection->prepare("SELECT `Number_of_Messages` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?");
+          $stmt2->bindParam(1, $params[0], PDO::PARAM_STR);
+          $stmt2->execute();
+          $Number_of_Messages = unserialize($stmt2->fetchAll(PDO::FETCH_ASSOC)[0]['Number_of_Messages']);
           if (array_key_exists($eachData[0], $Number_of_Messages)) {
             $a = $Number_of_Messages[$eachData[0]];
             $b = $eachData[0]."_last_Message_Time";
             $c = $Number_of_Messages[$b];
-            $output[] = [$displayPictureOfRecipient,$a,$c];
+            
+            //we also need to retrieve the last mesaage sent in that channel
+            $stmt3 = $this->connection->prepare("SELECT * FROM `Message` WHERE `Sender` IN(?,?) AND `Receiver` IN(?,?) ORDER BY `Time` DESC LIMIT 1");
+            $stmt3->bindParam(1,$params[0],PDO::PARAM_STR);
+            $stmt3->bindParam(2,$eachData[0],PDO::PARAM_STR);
+            $stmt3->bindParam(3,$params[0],PDO::PARAM_STR);
+            $stmt3->bindParam(4,$eachData[0],PDO::PARAM_STR);
+            $stmt3->execute();
+            $last_message_sent_within_channel = $stmt3->fetchAll(PDO::FETCH_ASSOC)[0]['Chat'];
+            
+            $output[] = [$displayPictureOfRecipient,$a,$c,$last_message_sent_within_channel];
           }else{
-            $output[] = [$displayPictureOfRecipient,0,''];
+            //a fail safe in case the receiver private channel has not messaged the sender before
+            
+            $output[] = [$displayPictureOfRecipient,0,'',''];
           }
         } else if ($eachData[1] == 'public') {
           $stmt = $this->connection->prepare("SELECT `Number_of_Messages`,`Number_of_Messages_Total` FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?");
@@ -660,13 +679,25 @@ Then updates it back
           $Result = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
           $Number_of_Messages = unserialize($Result['Number_of_Messages']);
           $Number_of_Messages_Total = unserialize($Result['Number_of_Messages_Total']);
-
+          //if the group does not exist,both Number_of_Messages_Total amd Number_of_Messages will return false..
+          //we can use that break out of this iteration  and return an empty result 
+          if(is_bool($Number_of_Messages)){
+            $output[] = [$displayPictureOfRecipient,0,'',''];
+            continue;
+          }//doing this prevent array_sum from throwing a type error 
           $b = $Number_of_Messages["last_Message_Time"];
           unset($Number_of_Messages["last_Message_Time"]);
           $a = array_sum($Number_of_Messages);
           $c = $Number_of_Messages_Total[$params[0]];
           $c = $a - $c;
-          $output[] = [$displayPictureOfRecipient,$c,$b];
+          
+          //we also need to retrieve the last mesaage sent in that channel
+           $stmt1 = $this->connection->prepare("SELECT * FROM `Message` WHERE `Receiver` = ? ORDER BY `Time` DESC LIMIT 1");
+           $stmt1->bindParam(1,$eachData[0],PDO::PARAM_STR);
+           $stmt1->execute();
+           $last_message_sent_within_channel = $stmt3->fetchAll(PDO::FETCH_ASSOC)[0]['Chat'];
+
+          $output[] = [$displayPictureOfRecipient,$c,$b,$last_message_sent_within_channel];
         }
       }
       return json_encode($output);
@@ -854,11 +885,10 @@ Then updates it back
       //default input values 
       $serializedEmptyArray = "a:0:{}";
       $serializedArray = serialize([$adminName]);
-      $zero = 0;
+      $zero = 1;//changing to 1 automatically verifies the user without email...if its 0,the we have to utilize the commentedail aspect just below
       $channel_type = $option1;
       $encrypted = '';
       $group_members = serialize([$adminName]);
-      //$name = $username;
       $pass = '';
       $email = '';
       
@@ -876,12 +906,18 @@ Then updates it back
         $email = $params[2];
         $serializedArray = serialize([$username]);
         
+        //No need to send mails since we are automatically verfiying while signing up
         //cook the email to be sent
-        $message = $_SERVER['HTTP_HOST'].dirname($_SERVER['SCRIPT_NAME'],1)."/Verify.php?q=$encrypted";
-        $subject = 'VERIFY WEB-CHAT Account';
-        $to = $email;//email of the new user
-        $headers = 'From: anjolaakinsoyinu@gmail.com' . "\r\n" .'Reply-To: anjolaakinsoyinu@gmail.com' . "\r\n" .'X-Mailer: PHP/' . phpversion();
-        mail($to,$subject,$message);
+        $subject = 'VERIFY Account FROM WC';
+        $url = "Here is your verification link from WEB CHAT -> \n
+        Please copy and paste the link in your browser. \n
+        twilightmessage.000webhostapp.com/Chat/Verify.php?q=".$encrypted;
+        $url = wordwrap($url,70);
+
+      
+        mail($email,$subject,$url);
+       
+       
       }
       
       $stmt = $this->connection->prepare('INSERT INTO `User_and_Groups_Details`(`User_or_Group_Name`,`Password`,`Email`,`Group_Admin`,`Blocked_List`,`Number_of_Messages`,`Number_of_Messages_Total`,`Status`,`EncryptionString`,`type`,`Group_Members`,`Notification_List`,`chatHistory`,`displayPicture`) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
@@ -904,18 +940,30 @@ Then updates it back
       if($channel_type == 'private'){
         $expireDate = time() + intval(700000);
         $expireDateForPopup = time() + intval(240);
+        setcookie('WEBCHAT','',time()-intval(55555555555),'/', $_SERVER['SERVER_NAME'],false,true);//this cookie should not be accessible by JS
         setcookie('WEBCHAT',json_encode([$username,$pass]),$expireDate,'/', $_SERVER['SERVER_NAME'],false,true);//this cookie should not be accessible by JS
         setcookie('timeout','timeout',$expireDateForPopup);
       }
       
-      return json_encode([$username,$pass]);
+      return "true";
     } catch (Exception $e) {
       throw new Exception($e->getMessage());
     }
   }
 
-  private function mailTo($to,$subject,$message,$headers) {
+  //not in use
+  private function mailTo($to,$subject,$message) {
     try {
+          
+      $headers = "Reply-To: Web Chat <anjolaakinsoyinu@gmail.com>\r\n"; 
+      $headers .= "Return-Path: Web Chat <anjolaakinsoyinu@gmail.com>\r\n"; 
+      $headers .= "From: Web Chat <anjolaakinsoyinu@gmail.com>\r\n";  
+      $headers .= "Organization: Web Chat Organization\r\n";
+      $headers .= "MIME-Version: 1.0\r\n";
+      $headers .= "Content-type: text/html; charset=iso-8859-1\r\n";
+      $headers .= "X-Priority: 3\r\n";
+      $headers .= "X-Mailer: PHP". phpversion() ."\r\n" ;
+
       mail($to, $subject, $message, $headers);
 
     } catch (Exception $e) {
@@ -938,11 +986,13 @@ Then updates it back
           if($check[0]['VerifiedAccount'] == 0){
             return "unverified";
           }else{
+            //unset($_COOKIE['WEBCHAT']);
+            setcookie('WEBCHAT','',time()-intval(70000000000),'/', $_SERVER['SERVER_NAME'],false,true);//this cookie should not be accessible by JS
             setcookie('WEBCHAT',json_encode([$params[0],$params[1]]),$expireDate,'/', $_SERVER['SERVER_NAME'],false,true);//this cookie should not be accessible by JS
-            header('Location:View/chathistory.php?sender='.$params[0]);
+            return "verified";
           }
         }else if(count($check) == 0){
-          return "<script>alert('Account does not exist'); history.back(); </script>";
+          return "<script>alert('Account does not exist'); history.go(-1); </script>";
         }
     } catch (Exception $e ) {
       throw new Exception($e->getMessage());
@@ -979,10 +1029,18 @@ Then updates it back
     }
   }
   
-  protected function executeStatement_20($params){
+  protected function executeStatement_20($query,$param){
     try {
-      if($params){
-        
+      if($param){
+        $stmt = $this->connection->prepare($query);
+        $stmt->bindParam(1,$param,PDO::PARAM_STR);
+        $stmt->execute();
+      }
+      $searchResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      if(count($searchResult) == 1){
+        return "true";
+      }else{
+       return "false";
       }
     } catch (Exception $e ) {
       throw new Exception($e->getMessage());

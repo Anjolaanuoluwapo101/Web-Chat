@@ -58,11 +58,13 @@ var qs = (function(a) {
 a('receiver').value = qs['receiver'];
 a('sender').value = qs['sender'];
 
+//not in use
 function time() {
   var timestamp = Math.floor(new Date().getTime() / 1000)
   return timestamp;
 }
 
+//not in use
 function convertTimestampToTime(timestamp) {
   let unix_timestamp = timestamp;
   // Create a new JavaScript Date object based on the timestamp

@@ -16,7 +16,7 @@ $(function () {
     a('channel_type').value=qs.channel_type;
     
      //we need to add the sender's name for better ux....
-     a('message').value = `<a href=''> <b>${qs['sender']}</b> </a><br>`+a('message').value;
+     a('message').value = `<b>${qs['sender']}</b> <br> `+a('message').value;
      
     $.ajax({
       url: '../linkFrontendToBackend.php',
@@ -31,6 +31,7 @@ $(function () {
         //we clear the message div whose content has just being sent for better ux
         a('message').value="";
         a('repliedMessage').value="";
+        a('file').value=null;
         a('repliedMessageDiv').innerHTML="";
       }
     });
@@ -47,7 +48,6 @@ function populateTaggedMessageDiv(id) {
   let taggedArea = a('repliedMessageDiv');
   taggedArea.innerHTML = `<span onclick="clearTaggedMessageDiv()" class="w3-right"><i class="fa fa-times"></i></span>`+document.getElementById(id).innerHTML;
   a('repliedMessage').value = a(id).innerHTML;
-  alert(a('repliedMessage').value)
   idForSentMessage = generateIDForNewMessage();
   a('MessageID').value = idForSentMessage;
 }

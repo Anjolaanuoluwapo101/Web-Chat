@@ -104,5 +104,9 @@ class UserModel extends Database
     return $this->executeStatement_19("SELECT * FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ?","UPDATE `User_and_Groups_Details` SET `VerifiedAccount` = ? WHERE `User_or_Group_Name` = ? ",$param);
   }
   
+  public function checkIfAccountExists($param){
+    return $this->executeStatement_20("SELECT * FROM `User_and_Groups_Details` WHERE `User_or_Group_Name` = ? ",$param);
+  }
+  
 }
 ?>

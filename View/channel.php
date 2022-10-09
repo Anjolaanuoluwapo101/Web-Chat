@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <?php
 //this cookie is initially set during sign_up and sign_in
 if(!isset($_COOKIE['WEBCHAT'])){
@@ -7,30 +6,51 @@ if(!isset($_COOKIE['WEBCHAT'])){
   $userName = json_decode($_COOKIE['WEBCHAT'])[0];
   $pattern = '/'.$userName.'/';
   $serverValues = $_SERVER['HTTP_COOKIE'];
+  //this if block checks if user is signed in at all 
   if(!preg_match($pattern,$serverValues) || !preg_match($pattern,$_SERVER['QUERY_STRING'])){
-     header('Location:../Sign_in.php');
+     //header('Location:../Sign_in.php');
+      echo "<script >window.location.href = '../Sign_in.php '</script>";
+  }
+  
+  //this if block checks if the account signed in IS the same as the query value of sender
+  if($userName != $_GET['sender']){
+    http_response_code(403);
+    exit();
+  }
+  
+  else if($_GET['receiver'] == $_GET['sender'] || !(isset($_GET['receiver'])  )){
+    http_response_code(403);
+    exit();
+  }
+  
+  else if ($_GET['receiver'] == '') {
+    http_response_code(403);
+    exit();
+  }
+
+  else if(!(isset($_GET['channel_type'])) || !($_GET['channel_type'] == 'public' || $_GET['channel_type'] == 'private')){
+    http_response_code(403);
+    exit();
   }
 }
-
 ?>
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="css/w3.css">
   <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="css/channel.css">
-  <link rel="stylesheet" href="css/w3-theme-khaki.css">
-  <style>
+  <link rel="stylesheet" href="css/w3-theme-indigo.css">
 
-  </style>
   <title>Chat</title>
 </head>
 <body class="">
   <div id="headerParent" class="w3-bar w3-padding-small" style="font-size:16px">
-    <div class="w3-bar-item" style="">
+    <div onclick="window.location.assign('<?php echo 'chathistory.php?sender='.$_GET['sender'] ?>')" class="w3-bar-item" style="">
       <i class="fa fa-arrow-left"></i>
     </div>
     <div class="w3-center w3-bar-item" id="Header" style="width:70%!important;"></div>
@@ -47,13 +67,16 @@ if(!isset($_COOKIE['WEBCHAT'])){
     <div class="w3-bar-item" style="" onclick="a('notif').style.display = 'block';a('chatSettings').style.display='none'  ">
       <span>Tagged Messages</span> <span id="no_of_tagged_messages" class="w3-tag"></span>
     </div>
+    <div class="w3-bar-item" id="share" style="" >
+      <span class="" onclick="a('linkDiv').style.display = 'block' ">SHARE <i class="fa fa-share"></i></span>
+    </div>
   </div>
 
   <br>
   <br>
   <br>
 
-  <div class="w3-center w3-circle w3-theme-l3" style="width:60%;margin-left:20%;" onclick="changeOffset('back')">
+  <div class="w3-center w3-round-large w3-theme-l3" style="width:60%;margin-left:20%;" onclick="changeOffset('back')">
     Last Messages
   </div>
 
@@ -61,7 +84,7 @@ if(!isset($_COOKIE['WEBCHAT'])){
   <div id="conversation"></div>
 
   <!-- the increaseDiv is usually hidden for better UX experience-->
-  <div class="w3-center w3-circle w3-red" style="width:60%;margin-left:20%;display:none" id="increaseOffset" onclick="changeOffset('forward')">
+  <div class="w3-center w3-round-large w3-theme-l3" style="width:60%;margin-left:20%;display:none" id="increaseOffset" onclick="changeOffset('forward')">
     Newer Messages
   </div>
 
@@ -74,10 +97,10 @@ if(!isset($_COOKIE['WEBCHAT'])){
 
   <div class="w3-bottom w3-padding w3-white">
     <!-- This div contains the tag mesaage the user is currently replying -->
-    <div id="repliedMessageDiv" style="width:80%;max-height:40px;overflow:scroll"></div>
+    <div id="repliedMessageDiv" style="width:80%;max-height:40px;"></div>
       <form  id="messageForm" enctype="multipart/form-data">
         <!-- Input for  text media-->
-        <textarea style="width:80%"  style="height:30px" class="w3-border w3-light-grey" type="text" name="text_chat" id="message"></textarea>
+        <textarea style="width:80%"  style="height:30px" class="w3-border w3-light-grey" type="text" name="text_chat" id="message" required></textarea>
 
         <!--submit button...-->
         <button class="w3-button" style="position:relative;top:-20px!important" type="submit"><i class="fa fa-send"></i></button>
@@ -129,17 +152,30 @@ if(!isset($_COOKIE['WEBCHAT'])){
       <button class="w3-button w3-right w3-theme-d4" type="submit">Confirm</button>
     </form>
   </div>
-
+  
+  <!-- GET GROUP LINK-->
+  <div id="linkDiv" class="w3-round-xxlarge w3-container w3-paddimg-large">
+    <span class="w3-right w3-padding-large" onclick="a('linkDiv').style.display = 'none'; "><i class="fa fa-times"></i></span>
+    <br>
+    <br>
+       <textarea class="js-copytextarea w3-input w3-border" readonly="readonly" ><?php echo "https://twilightmessage.000webhostapp.com/Chat/View/meet.php?ref=".$_GET['receiver']."&channel_type=public"; ?></textarea>
+       <br>
+       <br>
+       <button class="js-textareacopybtn w3-button w3-indigo" style="vertical-align:top;">COPY GROUP LINK</button>
+      
+  </div>
+  
+      
   <!-- This div is responsible for displaying taged messages-->
   <div id="notif" class="w3-animate-opacity w3-round-xxlarge w3-theme-l4" style="display:none;position:fixed;z-index:1500;top:0;left:25%;background-color:white;width:75%;height:100%;overflow:scroll!important">
-    <div onclick="document.getElementById('notif').style.display = 'none' ">
-      <i class="fa fa-times w3-xxlarge w3-padding-small"></i>
+    <div class="" onclick="document.getElementById('notif').style.display = 'none' ">
+      <i class="fa fa-times w3-xlarge w3-padding-large w3-spin"></i>
     </div>
     <div class="w3-center w3-xlarge w3-cursive">
       Tagged Messages
     </div>
-    <div id="notifDiv" class="w3-container w3-padding-small w3-bar-block" style="overflow:scroll!important">
-
+    <div id="notifDiv" class="w3-container w3-padding-small w3-bar-block w3-center" style="overflow:scroll!important">
+       
     </div>
   </div>
 </div>
@@ -155,6 +191,16 @@ if(!isset($_COOKIE['WEBCHAT'])){
 <script src="channel_js/saveToChatHistory.js"></script> 
 <script src="channel_js/loadTaggedMessages.js"></script>
 <script src="channel_js/markmessagesAsRead.js"></script>
-
+<script src="chathistory_js/chatHistory.js"></script>
+<script>
+  if(qs['channel_type'] == 'private'){
+    a('share').style.display = 'none';
+  }
+  if(getCookie('ref') != ''){
+    alert('You can access your chat history(Previous conversations) by clicking the left arrow at the top left corner!');
+    setCookie('ref','');
+  }
+  
+</script>
 </body>
 </html>

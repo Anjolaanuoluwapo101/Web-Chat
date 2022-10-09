@@ -16,8 +16,8 @@ if(isset($_GET['q'])){
   $objFeedController = new UserController();
   $verify = $objFeedController->input_14($decrypted);
   if($verify == "verified"){
-    echo "<script>alert('You have been verified!!!')</script>";
-    header('Location:Sign_in.php');
+    //echo "<script>alert('You have been verified!!!')</script>";
+    header('Location:Sign_in.php?q='.$decrypted);
   }else{
     echo "<script>alert('An error occurred')</script>";
   }
